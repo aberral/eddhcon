@@ -14,7 +14,7 @@
 ## Fill the DESCRIPTION ----
 ## Add meta data about your application
 golem::fill_desc(
-  pkg_name = "EDDHcon", # The Name of the package containing the App 
+  pkg_name = "eddh", # The Name of the package containing the App 
   pkg_title = "Contabilidad EDDH", # The Title of the package containing the App 
   pkg_description = "Aplicación para consultar la contabilidad y deudas de los hermanitos del EDDH.", # The Description of the package containing the App 
   author_first_name = "Alberto", # Your First Name

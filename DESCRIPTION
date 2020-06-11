@@ -1,4 +1,4 @@
-Package: EDDHcon
+Package: eddh
 Title: Contabilidad EDDH
 Version: 0.0.0.9000
 Authors@R: person('Alberto', 'Berral', email = 'eldespreciodeherodes@gmail.com', role = c('cre', 'aut'))
