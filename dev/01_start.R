@@ -15,8 +15,8 @@
 ## Add meta data about your application
 golem::fill_desc(
   pkg_name = "EDDHcon", # The Name of the package containing the App 
-  pkg_title = "eddh_acc", # The Title of the package containing the App 
-  pkg_description = "Contabilidad para EEDH", # The Description of the package containing the App 
+  pkg_title = "Contabilidad EDDH", # The Title of the package containing the App 
+  pkg_description = "Aplicación para consultar la contabilidad y deudas de los hermanitos del EDDH.", # The Description of the package containing the App 
   author_first_name = "Alberto", # Your First Name
   author_last_name = "Berral", # Your Last Name
   author_email = "eldespreciodeherodes@gmail.com", # Your Email
@@ -28,7 +28,7 @@ golem::set_golem_options()
 
 ## Create Common Files ----
 ## See ?usethis for more information
-usethis::use_mit_license( name = "Golem User" )  # You can set another license here
+usethis::use_mit_license( name = "EDDH" )  # You can set another license here
 usethis::use_readme_rmd( open = FALSE )
 usethis::use_code_of_conduct()
 usethis::use_lifecycle_badge( "Experimental" )
@@ -47,7 +47,7 @@ golem::use_recommended_deps()
 ## Favicon ----
 # If you want to change the favicon (default is golem's one)
 golem::remove_favicon()
-golem::use_favicon() # path = "path/to/ico". Can be an online file. 
+golem::use_favicon(path = "logo.ico") # path = "path/to/ico". Can be an online file. 
 
 ## Add helper functions ----
 golem::use_utils_ui()

@@ -1,13 +1,9 @@
-Package: eddh
-Title: An Amazing Shiny App
+Package: EDDHcon
+Title: Contabilidad EDDH
 Version: 0.0.0.9000
-Authors@R: 
-    person(given = "firstname",
-           family = "lastname",
-           role = c("aut", "cre"),
-           email = "your@email.com")
-Description: What the package does (one paragraph).
-License: What license is it under?
+Authors@R: person('Alberto', 'Berral', email = 'eldespreciodeherodes@gmail.com', role = c('cre', 'aut'))
+Description: Aplicación para consultar la contabilidad y deudas de los hermanitos del EDDH.
+License: MIT + file LICENSE
 Imports: 
     config,
     golem,
@@ -19,6 +15,8 @@ Imports:
     htmltools
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.0
 Suggests: 
     testthat
+URL: https://github.com/aberral/eddhcon
+BugReports: https://github.com/aberral/eddhcon/issues
