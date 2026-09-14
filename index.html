@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Deudas - Hermandad</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center p-4">
+
+  <div class="w-full max-w-md bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-6 mt-6">
+    
+    <!-- PANTALLA LOGIN -->
+    <div id="view-login" class="space-y-4">
+      <h2 class="text-2xl font-bold text-center text-white">🔒 Portal Hermanos</h2>
+      <p class="text-xs text-slate-400 text-center">Introduce tus credenciales para acceder</p>
+      <input id="email" type="email" placeholder="Correo electrónico" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <input id="password" type="password" placeholder="Contraseña" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <button onclick="login()" class="w-full bg-blue-600 font-bold p-3 rounded-xl hover:bg-blue-500 transition">Entrar</button>
+      <p id="login-error" class="text-red-400 text-sm text-center hidden"></p>
+    </div>
+
+    <!-- PANEL DEL HERMANO -->
+    <div id="view-dashboard" class="hidden space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+        <div>
+          <span class="text-xs text-slate-400">Hermano registrado:</span>
+          <h3 class="text-lg font-bold text-white" id="user-name">...</h3>
+        </div>
+        <button onclick="logout()" class="text-xs text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg hover:bg-red-500/10">Salir</button>
+      </div>
+
+      <!-- TARJETA SALDO -->
+      <div class="bg-blue-950/60 border border-blue-500/30 p-4 rounded-xl text-center">
+        <span class="text-xs font-bold text-blue-300 uppercase tracking-wider">Estado / Saldo Acumulado</span>
+        <div id="total-saldo" class="text-3xl font-extrabold text-green-400 mt-1">0.00 €</div>
+      </div>
+
+      <!-- TABLA DE MOVIMIENTOS -->
+      <h4 class="font-bold text-slate-200 text-sm pt-2">Histórico de Movimientos</h4>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-slate-700/50 uppercase text-slate-400">
+            <tr>
+              <th class="p-2">Asunto</th>
+              <th class="p-2 text-right">Precio</th>
+              <th class="p-2 text-right">Pagado</th>
+              <th class="p-2 text-right">Debe</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-body" class="divide-y divide-slate-700/50"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://lxcjatwyfooevdwbtjfu.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4Y2phdHd5Zm9vZXZkd2J0amZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzOTQ5NDQsImV4cCI6MjEwNDk3MDk0NH0.BrFq4bprMiNGKA0YX7WnTjO79UQUA4ij86U4ESnTjZY";
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function login() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errorEl = document.getElementById('login-error');
+
+      const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+      
+      if (error) {
+        errorEl.textContent = "Usuario o contraseña incorrectos";
+        errorEl.classList.remove('hidden');
+      } else {
+        errorEl.classList.add('hidden');
+        cargarDatos(data.user);
+      }
+    }
+
+    async function cargarDatos(user) {
+      document.getElementById('view-login').classList.add('hidden');
+      document.getElementById('view-dashboard').classList.remove('hidden');
+
+      const { data: deudas } = await _supabase.from('deudas').select('*');
+
+      if (deudas && deudas.length > 0) {
+        document.getElementById('user-name').textContent = deudas[0].hermano;
+        let html = '';
+        let totalDebe = 0;
+
+        deudas.forEach(r => {
+          totalDebe += Number(r.debe || 0);
+          html += `
+            <tr class="hover:bg-slate-700/30">
+              <td class="p-2 text-white">${r.asunto}</td>
+              <td class="p-2 text-right text-slate-400">${r.precio ? r.precio + ' €' : '-'}</td>
+              <td class="p-2 text-right text-blue-400">${r.pagado ? r.pagado + ' €' : '-'}</td>
+              <td class="p-2 text-right font-bold ${r.debe > 0 ? 'text-red-400' : 'text-green-400'}">${r.debe ? r.debe + ' €' : '-'}</td>
+            </tr>
+          `;
+        });
+
+        document.getElementById('tabla-body').innerHTML = html;
+        const saldoEl = document.getElementById('total-saldo');
+        saldoEl.textContent = totalDebe.toFixed(2) + " €";
+        saldoEl.className = totalDebe > 0 ? "text-3xl font-extrabold text-red-400 mt-1" : "text-3xl font-extrabold text-green-400 mt-1";
+      }
+    }
+
+    async function logout() {
+      await _supabase.auth.signOut();
+      location.reload();
+    }
+  </script>
+</body>
+</html>

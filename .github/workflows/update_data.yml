@@ -1,0 +1,31 @@
+name: Actualizar Deudas en Supabase
+
+on:
+  push:
+    paths:
+      - '2026_2027_deudas_hermanos.xlsx'
+  workflow_dispatch: # Permite ejecutar manualmente el script desde la web de GitHub
+
+jobs:
+  build-and-sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar Código del Repositorio
+        uses: actions/checkout@v3
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Instalar Dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas openpyxl supabase
+
+      - name: Procesar Excel y Actualizar Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python process_excel.py
