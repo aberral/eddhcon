@@ -3,30 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal Deudas - Hermandad</title>
+  <title>Portal Deudas - El Desprecio de Herodes</title>
+  <!-- Favicon para la pestaña del navegador -->
+  <link rel="icon" type="image/x-icon" href="logo.ico">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center p-4">
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-center p-4">
 
-  <div class="w-full max-w-md bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-6 mt-6 space-y-4">
+  <div class="w-full max-w-md bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-6 space-y-5">
     
+    <!-- CABECERA PRINCIPAL CON ESCUDO -->
+    <div class="flex flex-col items-center text-center border-b border-slate-700/60 pb-4">
+      <img src="logo.ico" alt="Escudo Hermandad" class="h-20 w-auto object-contain drop-shadow-md mb-2">
+      <h1 class="text-xl font-bold text-white tracking-wide">El Desprecio de Herodes</h1>
+      <p class="text-xs text-blue-400 font-medium uppercase tracking-wider">Primero de la Guía</p>
+    </div>
+
     <!-- PANTALLA LOGIN -->
-    <div id="view-login" class="space-y-4">
-      <h2 class="text-2xl font-bold text-center text-white">🔒 Portal Hermanos</h2>
-      <p class="text-xs text-slate-400 text-center">Introduce tus credenciales para acceder</p>
-      <input id="email" type="email" placeholder="Correo electrónico" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <input id="password" type="password" placeholder="Contraseña" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <button onclick="login()" class="w-full bg-blue-600 font-bold p-3 rounded-xl hover:bg-blue-500 transition">Entrar</button>
+    <div id="view-login" class="space-y-4 pt-1">
+      <p class="text-xs text-slate-400 text-center">Introduce tus credenciales para acceder al portal</p>
+      <input id="email" type="email" placeholder="Correo electrónico" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+      <input id="password" type="password" placeholder="Contraseña" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+      <button onclick="login()" class="w-full bg-blue-600 font-bold p-3 rounded-xl hover:bg-blue-500 transition text-sm">Entrar</button>
       <p id="login-error" class="text-red-400 text-sm text-center hidden"></p>
     </div>
 
     <!-- PANEL DEL HERMANO -->
     <div id="view-dashboard" class="hidden space-y-4">
-      <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+      <div class="flex justify-between items-center border-b border-slate-700/60 pb-3">
         <div>
           <span class="text-xs text-slate-400">Hermano registrado:</span>
-          <h3 class="text-lg font-bold text-white" id="user-name">...</h3>
+          <h3 class="text-base font-bold text-white" id="user-name">...</h3>
         </div>
         <button onclick="logout()" class="text-xs text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg hover:bg-red-500/10">Salir</button>
       </div>
@@ -44,14 +52,14 @@
           <span>Información para pagos</span>
         </div>
         <p>Te recuerdo que el número de cuenta donde domiciliar la cuota para mayor comodidad es:</p>
-        <div class="bg-slate-950 p-2 rounded border border-slate-800 font-mono text-center text-blue-300 select-all font-bold">
+        <div class="bg-slate-950 p-2 rounded border border-slate-800 font-mono text-center text-blue-300 select-all font-bold tracking-wider">
           ES05 0081 1547 6800 0101 7505
         </div>
-        <p>También puedes pagar vía **Bizum** como donación con el código: <span class="font-bold text-white">11413</span>.</p>
+        <p>También puedes pagar vía <strong class="text-white">Bizum</strong> como donación con el código: <span class="font-bold text-white bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">11413</span>.</p>
       </div>
 
       <!-- TABLA DE MOVIMIENTOS -->
-      <h4 class="font-bold text-slate-200 text-sm pt-2">Histórico de Movimientos</h4>
+      <h4 class="font-bold text-slate-200 text-sm pt-1">Histórico de Movimientos</h4>
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs text-slate-300">
           <thead class="bg-slate-700/50 uppercase text-slate-400">
@@ -107,11 +115,10 @@
       document.getElementById('view-login').classList.add('hidden');
       document.getElementById('view-dashboard').classList.remove('hidden');
 
-      // Consultar deudas
       const { data: deudas, error } = await _supabase
         .from('deudas')
         .select('*')
-        .order('id', { ascending: true }); // Mantenemos orden para calcular total correctamente
+        .order('id', { ascending: true });
 
       if (deudas && deudas.length > 0) {
         document.getElementById('user-name').textContent = deudas[0].hermano || 'Hermano';
@@ -123,10 +130,9 @@
           const debeVal = Number(r.debe || 0);
           totalDebe += debeVal;
 
-          // Si el asunto está vacío o es nulo pero hay valor en 'pagado', se asigna el texto de transferencia pendiente
           let asuntoTexto = r.asunto ? r.asunto.trim() : '';
           if (!asuntoTexto && Number(r.pagado || 0) > 0) {
-            asuntoTexto = '<em>Transferencia en proceso...</em>';
+            asuntoTexto = '<em class="text-blue-300/80">Transferencia en proceso...</em>';
           } else if (!asuntoTexto) {
             asuntoTexto = '-';
           }
@@ -141,7 +147,6 @@
           `);
         });
 
-        // Invertimos el array para que lo más reciente salga primero arriba
         document.getElementById('tabla-body').innerHTML = filasHtml.reverse().join('');
         
         const saldoEl = document.getElementById('total-saldo');
