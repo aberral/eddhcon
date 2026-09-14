@@ -42,22 +42,21 @@ def procesar_y_subir():
     filas_a_insertar = []
     
     for sheet_name in xls.sheet_names:
-        # 1. Cargar la hoja completa sin asumiendo encabezados aún
+        # Cargar la hoja sin asumir encabezados inmediatamente
         df_raw = pd.read_excel(xls, sheet_name=sheet_name, header=None)
         
-        # 2. Encontrar la fila donde están las columnas reales (buscando la palabra 'Asunto')
+        # Encontrar la fila del encabezado buscando 'asunto' o 'precio'
         header_row_idx = None
         for idx, row in df_raw.iterrows():
             row_values = [str(val).strip().lower() for val in row.values if pd.notnull(val)]
-            if any("asunto" in val or "concepto" in val for val in row_values):
+            if any("asunto" in val or "concepto" in val or "precio" in val for val in row_values):
                 header_row_idx = idx
                 break
                 
         if header_row_idx is None:
-            # Si no encuentra la palabra clave, intenta asumir la fila 0
             header_row_idx = 0
 
-        # 3. Recargar el DataFrame usando la fila correcta como encabezado
+        # Cargar con los encabezados reales
         df = pd.read_excel(xls, sheet_name=sheet_name, header=header_row_idx)
         df = df.dropna(how='all')
 
@@ -67,30 +66,33 @@ def procesar_y_subir():
         for _, row in df.iterrows():
             row_dict = {str(k).strip().lower(): v for k, v in row.items() if pd.notnull(v)}
             
-            asunto_val = row_dict.get("asunto") or row_dict.get("concepto") or row_dict.get("descripcion")
-            asunto_str = str(asunto_val).strip() if asunto_val else ""
-            
-            # Omitir filas que no sean movimientos reales o subtotales
-            if not asunto_str or asunto_str.lower() in ["nan", "none", "total", "subtotal", "asunto"]:
-                continue
-
+            # Extraer montos
             precio = float(row_dict.get("precio", 0)) if pd.notnull(row_dict.get("precio")) else 0.0
             pagado = float(row_dict.get("pagado", 0)) if pd.notnull(row_dict.get("pagado")) else 0.0
             debe = float(row_dict.get("debe", 0)) if pd.notnull(row_dict.get("debe")) else 0.0
+            
+            asunto_val = row_dict.get("asunto") or row_dict.get("concepto") or row_dict.get("descripcion")
+            asunto_str = str(asunto_val).strip() if (asunto_val and str(asunto_val).lower() != "nan") else ""
 
-            filas_a_insertar.append({
-                "user_id": user_id,
-                "hermano": nombre_pestana,
-                "asunto": asunto_str,
-                "precio": precio,
-                "pagado": pagado,
-                "debe": debe
-            })
+            # Omitir filas de totales o encabezados repetidos
+            if asunto_str.lower() in ["total", "subtotal", "asunto", "concepto"]:
+                continue
+
+            # ACEPTAR LA FILA SI: tiene un asunto válido O si tiene importes numéricos (como un pago sin asunto)
+            if asunto_str or (precio != 0 or pagado != 0 or debe != 0):
+                filas_a_insertar.append({
+                    "user_id": user_id,
+                    "hermano": nombre_pestana,
+                    "asunto": asunto_str,  # Si viene vacío, se guardará como cadena vacía "" en Supabase
+                    "precio": precio,
+                    "pagado": pagado,
+                    "debe": debe
+                })
 
     if filas_a_insertar:
         supabase.table("deudas").delete().neq("id", 0).execute()
         supabase.table("deudas").insert(filas_a_insertar).execute()
-        print(f"¡ÉXITO! Insertadas {len(filas_a_insertar)} filas omitiendo los títulos superiores.")
+        print(f"¡ÉXITO! Insertadas {len(filas_a_insertar)} filas (incluyendo transferencias sin asunto).")
     else:
         print("Atención: No se han encontrado filas válidas para insertar.")
 

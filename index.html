@@ -9,7 +9,7 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center p-4">
 
-  <div class="w-full max-w-md bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-6 mt-6">
+  <div class="w-full max-w-md bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-6 mt-6 space-y-4">
     
     <!-- PANTALLA LOGIN -->
     <div id="view-login" class="space-y-4">
@@ -37,6 +37,19 @@
         <div id="total-saldo" class="text-3xl font-extrabold text-green-400 mt-1">0.00 €</div>
       </div>
 
+      <!-- MENSAJE DE INFORMACIÓN DE PAGO -->
+      <div class="bg-slate-900/80 border border-slate-700 p-3.5 rounded-xl text-xs space-y-2 text-slate-300">
+        <div class="flex items-center gap-1.5 font-semibold text-blue-400">
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <span>Información para pagos</span>
+        </div>
+        <p>Te recuerdo que el número de cuenta donde domiciliar la cuota para mayor comodidad es:</p>
+        <div class="bg-slate-950 p-2 rounded border border-slate-800 font-mono text-center text-blue-300 select-all font-bold">
+          ES05 0081 1547 6800 0101 7505
+        </div>
+        <p>También puedes pagar vía **Bizum** como donación con el código: <span class="font-bold text-white">11413</span>.</p>
+      </div>
+
       <!-- TABLA DE MOVIMIENTOS -->
       <h4 class="font-bold text-slate-200 text-sm pt-2">Histórico de Movimientos</h4>
       <div class="overflow-x-auto">
@@ -61,7 +74,6 @@
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdscHh1anNudHl3b2t2eWRoeGFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzOTU4MzQsImV4cCI6MjEwNDk3MTgzNH0.Mb-j64tfDif1HZUqkJNxDTtBCHNSQOmClQuhuFflYDc";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // Mantener la sesión al recargar la página
     window.addEventListener('DOMContentLoaded', async () => {
       const { data: { session } } = await _supabase.auth.getSession();
       if (session) {
@@ -85,7 +97,6 @@
       }
     }
 
-    // Helper para formatear valores numéricos a moneda
     function formatMoney(val) {
       if (val === null || val === undefined) return '-';
       const num = Number(val);
@@ -96,34 +107,43 @@
       document.getElementById('view-login').classList.add('hidden');
       document.getElementById('view-dashboard').classList.remove('hidden');
 
+      // Consultar deudas
       const { data: deudas, error } = await _supabase
         .from('deudas')
         .select('*')
-        .order('id', { ascending: true });
+        .order('id', { ascending: true }); // Mantenemos orden para calcular total correctamente
 
       if (deudas && deudas.length > 0) {
         document.getElementById('user-name').textContent = deudas[0].hermano || 'Hermano';
-        let html = '';
+        
         let totalDebe = 0;
+        let filasHtml = [];
 
         deudas.forEach(r => {
-          const precioVal = Number(r.precio || 0);
-          const pagadoVal = Number(r.pagado || 0);
           const debeVal = Number(r.debe || 0);
-
           totalDebe += debeVal;
 
-          html += `
+          // Si el asunto está vacío o es nulo pero hay valor en 'pagado', se asigna el texto de transferencia pendiente
+          let asuntoTexto = r.asunto ? r.asunto.trim() : '';
+          if (!asuntoTexto && Number(r.pagado || 0) > 0) {
+            asuntoTexto = '<em>Transferencia en proceso...</em>';
+          } else if (!asuntoTexto) {
+            asuntoTexto = '-';
+          }
+
+          filasHtml.push(`
             <tr class="hover:bg-slate-700/30">
-              <td class="p-2 text-white">${r.asunto || '-'}</td>
+              <td class="p-2 text-white">${asuntoTexto}</td>
               <td class="p-2 text-right text-slate-400">${formatMoney(r.precio)}</td>
               <td class="p-2 text-right text-blue-400">${formatMoney(r.pagado)}</td>
               <td class="p-2 text-right font-bold ${debeVal > 0 ? 'text-red-400' : 'text-green-400'}">${formatMoney(r.debe)}</td>
             </tr>
-          `;
+          `);
         });
 
-        document.getElementById('tabla-body').innerHTML = html;
+        // Invertimos el array para que lo más reciente salga primero arriba
+        document.getElementById('tabla-body').innerHTML = filasHtml.reverse().join('');
+        
         const saldoEl = document.getElementById('total-saldo');
         saldoEl.textContent = totalDebe.toFixed(2) + " €";
         saldoEl.className = totalDebe > 0 ? "text-3xl font-extrabold text-red-400 mt-1" : "text-3xl font-extrabold text-green-400 mt-1";
