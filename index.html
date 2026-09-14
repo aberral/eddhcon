@@ -61,6 +61,14 @@
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdscHh1anNudHl3b2t2eWRoeGFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzOTU4MzQsImV4cCI6MjEwNDk3MTgzNH0.Mb-j64tfDif1HZUqkJNxDTtBCHNSQOmClQuhuFflYDc";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    // Mantener la sesión al recargar la página
+    window.addEventListener('DOMContentLoaded', async () => {
+      const { data: { session } } = await _supabase.auth.getSession();
+      if (session) {
+        cargarDatos(session.user);
+      }
+    });
+
     async function login() {
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
@@ -77,25 +85,40 @@
       }
     }
 
+    // Helper para formatear valores numéricos a moneda
+    function formatMoney(val) {
+      if (val === null || val === undefined) return '-';
+      const num = Number(val);
+      return isNaN(num) ? '-' : num.toFixed(2) + ' €';
+    }
+
     async function cargarDatos(user) {
       document.getElementById('view-login').classList.add('hidden');
       document.getElementById('view-dashboard').classList.remove('hidden');
 
-      const { data: deudas } = await _supabase.from('deudas').select('*');
+      const { data: deudas, error } = await _supabase
+        .from('deudas')
+        .select('*')
+        .order('id', { ascending: true });
 
       if (deudas && deudas.length > 0) {
-        document.getElementById('user-name').textContent = deudas[0].hermano;
+        document.getElementById('user-name').textContent = deudas[0].hermano || 'Hermano';
         let html = '';
         let totalDebe = 0;
 
         deudas.forEach(r => {
-          totalDebe += Number(r.debe || 0);
+          const precioVal = Number(r.precio || 0);
+          const pagadoVal = Number(r.pagado || 0);
+          const debeVal = Number(r.debe || 0);
+
+          totalDebe += debeVal;
+
           html += `
             <tr class="hover:bg-slate-700/30">
-              <td class="p-2 text-white">${r.asunto}</td>
-              <td class="p-2 text-right text-slate-400">${r.precio ? r.precio + ' €' : '-'}</td>
-              <td class="p-2 text-right text-blue-400">${r.pagado ? r.pagado + ' €' : '-'}</td>
-              <td class="p-2 text-right font-bold ${r.debe > 0 ? 'text-red-400' : 'text-green-400'}">${r.debe ? r.debe + ' €' : '-'}</td>
+              <td class="p-2 text-white">${r.asunto || '-'}</td>
+              <td class="p-2 text-right text-slate-400">${formatMoney(r.precio)}</td>
+              <td class="p-2 text-right text-blue-400">${formatMoney(r.pagado)}</td>
+              <td class="p-2 text-right font-bold ${debeVal > 0 ? 'text-red-400' : 'text-green-400'}">${formatMoney(r.debe)}</td>
             </tr>
           `;
         });
@@ -104,6 +127,8 @@
         const saldoEl = document.getElementById('total-saldo');
         saldoEl.textContent = totalDebe.toFixed(2) + " €";
         saldoEl.className = totalDebe > 0 ? "text-3xl font-extrabold text-red-400 mt-1" : "text-3xl font-extrabold text-green-400 mt-1";
+      } else {
+        document.getElementById('tabla-body').innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500">No hay movimientos registrados.</td></tr>`;
       }
     }
 

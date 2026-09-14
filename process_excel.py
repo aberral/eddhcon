@@ -45,15 +45,18 @@ def procesar_y_subir():
         # Obtener el user_id del hermano dueño de esta pestaña
         user_id = mapa_usuarios.get(sheet_name.strip(), None)
         
-        for _, row in df.iterrows():
-            filas_a_insertar.append({
-                "user_id": user_id,  # <-- EL SCRIPT AHORA ASIGNA EL ID AUTOMÁTICAMENTE
-                "hermano": sheet_name.strip(),
-                "asunto": str(row.get("Asunto", "")),
-                "precio": float(row.get("Precio", 0)) if pd.notnull(row.get("Precio")) else 0,
-                "pagado": float(row.get("Pagado", 0)) if pd.notnull(row.get("Pagado")) else 0,
-                "debe": float(row.get("Debe", 0)) if pd.notnull(row.get("Debe")) else 0
-            })
+    for _, row in df.iterrows():
+        # Convertir nombres de columnas a minúsculas para evitar fallos
+        row_dict = {str(k).strip().lower(): v for k, v in row.items()}
+        
+        filas_a_insertar.append({
+            "user_id": user_id,
+            "hermano": sheet_name.strip(),
+            "asunto": str(row_dict.get("asunto", "")),
+            "precio": float(row_dict.get("precio", 0)) if pd.notnull(row_dict.get("precio")) else 0.0,
+            "pagado": float(row_dict.get("pagado", 0)) if pd.notnull(row_dict.get("pagado")) else 0.0,
+            "debe": float(row_dict.get("debe", 0)) if pd.notnull(row_dict.get("debe")) else 0.0
+        })
             
     if filas_a_insertar:
         supabase.table("deudas").insert(filas_a_insertar).execute()
