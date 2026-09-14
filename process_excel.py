@@ -3,8 +3,8 @@ import pandas as pd
 from supabase import create_client, Client
 
 # Configuración de variables de entorno (las provee GitHub Actions)
-SUPABASE_URL = os.environ.get("https://lxcjatwyfooevdwbtjfu.supabase.co")
-SUPABASE_SERVICE_KEY = os.environ.get("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4Y2phdHd5Zm9vZXZkd2J0amZ1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTM5NDk0NCwiZXhwIjoyMTA0OTcwOTQ0fQ._Zkw_RZKjINkaLdKARtZ9X-kPtyGwyIm8SfMImt8dj0")
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
