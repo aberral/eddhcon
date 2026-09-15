@@ -58,9 +58,9 @@
           <thead class="bg-slate-700/50 uppercase text-slate-400">
             <tr>
               <th class="p-2">Asunto</th>
-              <th class="p-2 text-right">Precio</th>
-              <th class="p-2 text-right">Pagado</th>
-              <th class="p-2 text-right">Debe</th>
+              <th class="p-2 text-right whitespace-nowrap">Precio</th>
+              <th class="p-2 text-right whitespace-nowrap">Pagado</th>
+              <th class="p-2 text-right whitespace-nowrap">Debe</th>
             </tr>
           </thead>
           <tbody id="tabla-body" class="divide-y divide-slate-700/50"></tbody>
@@ -121,11 +121,9 @@
     }
 
     async function cargarDatos(user) {
-      // 1. Mostrar de inmediato la interfaz del usuario
       document.getElementById('view-login').classList.add('hidden');
       document.getElementById('view-dashboard').classList.remove('hidden');
 
-      // 2. Obtener el nombre del hermano desde la tabla 'perfiles' por su email
       const { data: perfil } = await _supabase
         .from('perfiles')
         .select('hermano')
@@ -135,7 +133,6 @@
       const nombreHermano = perfil?.hermano || user.email;
       document.getElementById('user-name').textContent = nombreHermano;
 
-      // 3. Consultar los movimientos/deudas
       const { data: deudas, error } = await _supabase
         .from('deudas')
         .select('*')
@@ -158,15 +155,14 @@
 
           filasHtml.push(`
             <tr class="hover:bg-slate-700/30">
-              <td class="p-2 text-white">${asuntoTexto}</td>
-              <td class="p-2 text-right text-slate-400">${formatMoney(r.precio)}</td>
-              <td class="p-2 text-right text-blue-400">${formatMoney(r.pagado)}</td>
-              <td class="p-2 text-right font-bold ${debeVal > 0 ? 'text-red-400' : 'text-green-400'}">${formatMoney(r.debe)}</td>
+              <td class="p-2 text-white pr-2">${asuntoTexto}</td>
+              <td class="p-2 text-right text-slate-400 whitespace-nowrap">${formatMoney(r.precio)}</td>
+              <td class="p-2 text-right text-blue-400 whitespace-nowrap">${formatMoney(r.pagado)}</td>
+              <td class="p-2 text-right font-bold whitespace-nowrap ${debeVal > 0 ? 'text-red-400' : 'text-green-400'}">${formatMoney(r.debe)}</td>
             </tr>
           `);
         });
 
-        // Invertimos la lista para que salgan primero los más recientes arriba
         document.getElementById('tabla-body').innerHTML = filasHtml.reverse().join('');
         
         const saldoEl = document.getElementById('total-saldo');
