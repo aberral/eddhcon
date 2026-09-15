@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Portal Deudas - El Desprecio de Herodes</title>
-  <!-- Favicon para la pestaña del navegador -->
   <link rel="icon" type="image/x-icon" href="logo.ico">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -13,14 +12,12 @@
 
   <div class="w-full max-w-md bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl p-6 space-y-5">
     
-    <!-- CABECERA PRINCIPAL CON ESCUDO -->
     <div class="flex flex-col items-center text-center border-b border-slate-700/60 pb-4">
       <img src="logo.ico" alt="Escudo Hermandad" class="h-20 w-auto object-contain drop-shadow-md mb-2">
       <h1 class="text-xl font-bold text-white tracking-wide">El Desprecio de Herodes</h1>
       <p class="text-xs text-blue-400 font-medium uppercase tracking-wider">Primero de la Guía</p>
     </div>
 
-    <!-- PANTALLA LOGIN -->
     <div id="view-login" class="space-y-4 pt-1">
       <p class="text-xs text-slate-400 text-center">Introduce tus credenciales para acceder al portal</p>
       <input id="email" type="email" placeholder="Correo electrónico" class="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
@@ -29,7 +26,6 @@
       <p id="login-error" class="text-red-400 text-sm text-center hidden"></p>
     </div>
 
-    <!-- PANEL DEL HERMANO -->
     <div id="view-dashboard" class="hidden space-y-4">
       <div class="flex justify-between items-center border-b border-slate-700/60 pb-3">
         <div>
@@ -39,13 +35,11 @@
         <button onclick="logout()" class="text-xs text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg hover:bg-red-500/10">Salir</button>
       </div>
 
-      <!-- TARJETA SALDO -->
       <div class="bg-blue-950/60 border border-blue-500/30 p-4 rounded-xl text-center">
         <span class="text-xs font-bold text-blue-300 uppercase tracking-wider">Estado / Saldo Acumulado</span>
         <div id="total-saldo" class="text-3xl font-extrabold text-green-400 mt-1">0.00 €</div>
       </div>
 
-      <!-- MENSAJE DE INFORMACIÓN DE PAGO -->
       <div class="bg-slate-900/80 border border-slate-700 p-3.5 rounded-xl text-xs space-y-2 text-slate-300">
         <div class="flex items-center gap-1.5 font-semibold text-blue-400">
           <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -58,7 +52,6 @@
         <p>También puedes pagar vía <strong class="text-white">Bizum</strong> como donación con el código: <span class="font-bold text-white bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">11413</span>.</p>
       </div>
 
-      <!-- TABLA DE MOVIMIENTOS -->
       <h4 class="font-bold text-slate-200 text-sm pt-1">Histórico de Movimientos</h4>
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs text-slate-300">
@@ -73,6 +66,21 @@
           <tbody id="tabla-body" class="divide-y divide-slate-700/50"></tbody>
         </table>
       </div>
+
+      <div class="border-t border-slate-700/60 pt-4 mt-4">
+        <details class="group">
+          <summary class="flex justify-between items-center text-xs font-semibold text-slate-400 cursor-pointer hover:text-white select-none">
+            <span>⚙️ Cambiar mi contraseña</span>
+            <span class="transition group-open:rotate-180">▼</span>
+          </summary>
+          <div class="mt-3 space-y-2">
+            <input id="new-password" type="password" placeholder="Nueva contraseña" class="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs">
+            <button onclick="cambiarPassword()" class="w-full bg-slate-700 text-white font-medium p-2.5 rounded-lg hover:bg-slate-600 transition text-xs">Guardar nueva contraseña</button>
+            <p id="pwd-msg" class="text-xs text-center hidden"></p>
+          </div>
+        </details>
+      </div>
+
     </div>
 
   </div>
@@ -155,6 +163,32 @@
       } else {
         document.getElementById('tabla-body').innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500">No hay movimientos registrados.</td></tr>`;
       }
+    }
+
+    async function cambiarPassword() {
+      const newPassword = document.getElementById('new-password').value;
+      const pwdMsg = document.getElementById('pwd-msg');
+
+      if (!newPassword || newPassword.length < 6) {
+        pwdMsg.textContent = "La contraseña debe tener al menos 6 caracteres.";
+        pwdMsg.className = "text-xs text-center text-red-400";
+        pwdMsg.classList.remove('hidden');
+        return;
+      }
+
+      const { data, error } = await _supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        pwdMsg.textContent = "Error al actualizar: " + error.message;
+        pwdMsg.className = "text-xs text-center text-red-400";
+      } else {
+        pwdMsg.textContent = "¡Contraseña actualizada correctamente!";
+        pwdMsg.className = "text-xs text-center text-green-400";
+        document.getElementById('new-password').value = '';
+      }
+      pwdMsg.classList.remove('hidden');
     }
 
     async function logout() {
