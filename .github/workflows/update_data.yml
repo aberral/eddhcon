@@ -1,23 +1,30 @@
 name: Sincronizar Excel con Supabase
 
 on:
-  workflow_dispatch: # Permite ejecutar la sincronización manualmente con un botón
+  # 1. Se ejecuta automáticamente cada vez que modifiques el Excel
   push:
     branches:
-      - main           # Se ejecuta automáticamente cada vez que subes un nuevo Excel a 'main'
+      - main
+    paths:
+      - '2026_2027_deudas_hermanos.xlsx'
+
+  # 2. Se ejecuta una vez a la semana (todos los lunes a las 08:00 AM UTC)
   schedule:
-    - cron: '0 8 * * *' # Opcional: Se ejecuta automáticamente todos los días a las 8:00 AM
+    - cron: '0 8 * * 1'
+
+  # 3. Mantiene la opción de ejecutarlo manualmente
+  workflow_dispatch:
 
 jobs:
-  sync-data:
+  sync:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Descargar el código del repositorio
-        uses: actions/checkout@v4
+      - name: Descargar código del repositorio
+        uses: actions/checkout@v3
 
       - name: Configurar Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
