@@ -46,4 +46,178 @@
           <span>Información para pagos</span>
         </div>
         <p>Te recuerdo que el número de cuenta donde domiciliar la cuota para mayor comodidad es:</p>
-        <div class="bg-slate-950 p-2 rounded border border-slate-800 font-mono text-center
+        <div class="bg-slate-950 p-2 rounded border border-slate-800 font-mono text-center text-blue-300 select-all font-bold tracking-wider">
+          ES05 0081 1547 6800 0101 7505
+        </div>
+        <p>También puedes pagar vía <strong class="text-white">Bizum</strong> como donación con el código: <span class="font-bold text-white bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">11413</span>.</p>
+      </div>
+
+      <h4 class="font-bold text-slate-200 text-sm pt-1">Histórico de Movimientos</h4>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-slate-700/50 uppercase text-slate-400">
+            <tr>
+              <th class="p-2">Asunto</th>
+              <th class="p-2 text-right">Precio</th>
+              <th class="p-2 text-right">Pagado</th>
+              <th class="p-2 text-right">Debe</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-body" class="divide-y divide-slate-700/50"></tbody>
+        </table>
+      </div>
+
+      <div class="border-t border-slate-700/60 pt-4 mt-4">
+        <details class="group">
+          <summary class="flex justify-between items-center text-xs font-semibold text-slate-400 cursor-pointer hover:text-white select-none">
+            <span>⚙️ Cambiar mi contraseña</span>
+            <span class="transition group-open:rotate-180">▼</span>
+          </summary>
+          <div class="mt-3 space-y-2">
+            <input id="new-password" type="password" placeholder="Nueva contraseña" class="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs">
+            <input id="confirm-password" type="password" placeholder="Confirmar nueva contraseña" class="w-full p-2.5 bg-slate-900 border border-slate-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs">
+            <button onclick="cambiarPassword()" class="w-full bg-slate-700 text-white font-medium p-2.5 rounded-lg hover:bg-slate-600 transition text-xs">Guardar nueva contraseña</button>
+            <p id="pwd-msg" class="text-xs text-center hidden"></p>
+          </div>
+        </details>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://glpxujsntywokvydhxao.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdscHh1anNudHl3b2t2eWRoeGFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzOTU4MzQsImV4cCI6MjEwNDk3MTgzNH0.Mb-j64tfDif1HZUqkJNxDTtBCHNSQOmClQuhuFflYDc";
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      const { data: { session } } = await _supabase.auth.getSession();
+      if (session) {
+        cargarDatos(session.user);
+      }
+    });
+
+    async function login() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errorEl = document.getElementById('login-error');
+
+      const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+      
+      if (error) {
+        errorEl.textContent = "Usuario o contraseña incorrectos";
+        errorEl.classList.remove('hidden');
+      } else {
+        errorEl.classList.add('hidden');
+        cargarDatos(data.user);
+      }
+    }
+
+    function formatMoney(val) {
+      if (val === null || val === undefined) return '-';
+      const num = Number(val);
+      return isNaN(num) ? '-' : num.toFixed(2) + ' €';
+    }
+
+    async function cargarDatos(user) {
+      // 1. Mostrar de inmediato la interfaz del usuario
+      document.getElementById('view-login').classList.add('hidden');
+      document.getElementById('view-dashboard').classList.remove('hidden');
+
+      // 2. Obtener el nombre del hermano desde la tabla 'perfiles' por su email
+      const { data: perfil } = await _supabase
+        .from('perfiles')
+        .select('hermano')
+        .eq('email', user.email)
+        .maybeSingle();
+
+      const nombreHermano = perfil?.hermano || user.email;
+      document.getElementById('user-name').textContent = nombreHermano;
+
+      // 3. Consultar los movimientos/deudas
+      const { data: deudas, error } = await _supabase
+        .from('deudas')
+        .select('*')
+        .order('id', { ascending: true });
+
+      if (deudas && deudas.length > 0) {
+        let totalDebe = 0;
+        let filasHtml = [];
+
+        deudas.forEach(r => {
+          const debeVal = Number(r.debe || 0);
+          totalDebe += debeVal;
+
+          let asuntoTexto = r.asunto ? r.asunto.trim() : '';
+          if (!asuntoTexto && Number(r.pagado || 0) > 0) {
+            asuntoTexto = '<em class="text-blue-300/80">Transferencia en proceso...</em>';
+          } else if (!asuntoTexto) {
+            asuntoTexto = '-';
+          }
+
+          filasHtml.push(`
+            <tr class="hover:bg-slate-700/30">
+              <td class="p-2 text-white">${asuntoTexto}</td>
+              <td class="p-2 text-right text-slate-400">${formatMoney(r.precio)}</td>
+              <td class="p-2 text-right text-blue-400">${formatMoney(r.pagado)}</td>
+              <td class="p-2 text-right font-bold ${debeVal > 0 ? 'text-red-400' : 'text-green-400'}">${formatMoney(r.debe)}</td>
+            </tr>
+          `);
+        });
+
+        // Invertimos la lista para que salgan primero los más recientes arriba
+        document.getElementById('tabla-body').innerHTML = filasHtml.reverse().join('');
+        
+        const saldoEl = document.getElementById('total-saldo');
+        saldoEl.textContent = totalDebe.toFixed(2) + " €";
+        saldoEl.className = totalDebe > 0 ? "text-3xl font-extrabold text-red-400 mt-1" : "text-3xl font-extrabold text-green-400 mt-1";
+      } else {
+        document.getElementById('tabla-body').innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500">No hay movimientos registrados.</td></tr>`;
+        document.getElementById('total-saldo').textContent = "0.00 €";
+        document.getElementById('total-saldo').className = "text-3xl font-extrabold text-green-400 mt-1";
+      }
+    }
+
+    async function cambiarPassword() {
+      const newPassword = document.getElementById('new-password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+      const pwdMsg = document.getElementById('pwd-msg');
+
+      if (!newPassword || newPassword.length < 6) {
+        pwdMsg.textContent = "La contraseña debe tener al menos 6 caracteres.";
+        pwdMsg.className = "text-xs text-center text-red-400";
+        pwdMsg.classList.remove('hidden');
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        pwdMsg.textContent = "Las contraseñas no coinciden.";
+        pwdMsg.className = "text-xs text-center text-red-400";
+        pwdMsg.classList.remove('hidden');
+        return;
+      }
+
+      const { data, error } = await _supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        pwdMsg.textContent = "Error al actualizar: " + error.message;
+        pwdMsg.className = "text-xs text-center text-red-400";
+      } else {
+        pwdMsg.textContent = "¡Contraseña actualizada correctamente!";
+        pwdMsg.className = "text-xs text-center text-green-400";
+        document.getElementById('new-password').value = '';
+        document.getElementById('confirm-password').value = '';
+      }
+      pwdMsg.classList.remove('hidden');
+    }
+
+    async function logout() {
+      await _supabase.auth.signOut();
+      location.reload();
+    }
+  </script>
+</body>
+</html>
